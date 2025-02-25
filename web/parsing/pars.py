@@ -1,103 +1,79 @@
-Вот пример кода для выполнения GET-запросов и парсинга сайтов на Python с использованием библиотек `requests` и `BeautifulSoup`.
-
-### 1. Установите необходимые библиотеки
-```bash
-pip install requests beautifulsoup4
-```
-
-### 2. Базовый пример
-```python
 import requests
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 from bs4 import BeautifulSoup
+from PyQt5.QtCore import Qt
+from urllib.parse import urljoin  # Добавлено для обработки относительных ссылок
 
-# Выполняем GET-запрос к сайту
-url = "https://example.com"
-try:
-    response = requests.get(url)
-    
-    # Проверяем успешность запроса (статус 200)
-    response.raise_for_status()  # Если статус не 200, вызовет исключение
-    
-    # Парсим HTML-контент страницы
-    soup = BeautifulSoup(response.text, 'html.parser')  # 'html.parser' — встроенный парсер Python
-    
-    # Пример извлечения данных:
-    # Найдем все заголовки <h1> на странице
-    headings = soup.find_all('h1')
-    print("Заголовки на странице:")
-    for heading in headings:
-        print(heading.text.strip())  # .strip() удаляет лишние пробелы
-    
-    # Найдем все ссылки <a> на странице
-    links = soup.find_all('a')
-    print("\nСсылки на странице:")
-    for link in links:
-        print(f"{link.text.strip()} -> {link.get('href')}")
+Form, Window = uic.loadUiType("main.ui")
+app = QtWidgets.QApplication([])
+window = Window()
+form = Form()
+form.setupUi(window)
+window.setWindowTitle("Parsing")
 
-except requests.exceptions.RequestException as e:
-    print(f"Ошибка при выполнении запроса: {e}")
-```
+OBJECT = '''
+border-color: rgb(50,50,50);
+border-style: solid;
+border-width: 1px;
+border-radius: 1px;
+min-width: 250;
+min-height: 35;
+max-width: 250;
+max-height: 35;
+'''
 
----
+form.lineEdit.setStyleSheet(OBJECT)
+form.pushButton.setStyleSheet(OBJECT)
 
-### Пояснение кода:
-1. **GET-запрос через `requests`**:
-   - `requests.get(url)` отправляет GET-запрос к указанному URL.
-   - `response.text` содержит HTML-код страницы.
-   - `response.raise_for_status()` проверяет, был ли запрос успешным (код 200). Если нет, вызывает ошибку.
+label = QtWidgets.QLabel()
+label.setWordWrap(True)
+label.setAlignment(Qt.AlignTop)
+label.setOpenExternalLinks(True)
 
-2. **Парсинг с `BeautifulSoup`**:
-   - `BeautifulSoup(response.text, 'html.parser')` создает объект для парсинга HTML.
-   - `soup.find_all('тег')` ищет все элементы по указанному тегу (например, `h1`, `a`).
-   - `link.get('href')` извлекает значение атрибута `href` из тега `<a>`.
+lay = QtWidgets.QVBoxLayout()
+form.frame.setLayout(lay)
+scroll = QtWidgets.QScrollArea()
+scroll.setWidgetResizable(True)
+scroll.setWidget(label)
+lay.addWidget(scroll)
 
----
 
-### 3. Пример с параметрами запроса и заголовками
-Иногда сайты требуют указать заголовки (например, `User-Agent`) или параметры.
+def parsing():
+    label.clear()
+    url = form.lineEdit.text()
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-```python
-import requests
+        # Собираем HTML-контент
+        html_content = []
 
-url = "https://httpbin.org/get"
-headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124",  # Пример User-Agent
-}
+        # Заголовки
+        headings = soup.find_all('h1')
+        html_content.append("<h2>Заголовки:</h2>")
+        for heading in headings:
+            html_content.append(f"<p>{heading.text.strip()}</p>")
 
-params = {
-    "key1": "value1",
-    "key2": "value2",
-}
+        # Ссылки
+        links = soup.find_all('a')
+        html_content.append("<h2>Ссылки:</h2>")
+        for link in links:
+            href = link.get('href')
+            if href:
+                # Преобразуем относительные ссылки в абсолютные
+                absolute_url = urljoin(url, href)
+                html_content.append(
+                    f'<p><a href="{absolute_url}">{link.text.strip() or absolute_url}</a></p>'
+                )
 
-try:
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    
-    # Выведем URL с параметрами и ответ сервера
-    print("Полный URL:", response.url)  # https://httpbin.org/get?key1=value1&key2=value2
-    print("Ответ сервера (JSON):", response.json())
+        # Устанавливаем весь HTML за один раз
+        label.setText("".join(html_content))
 
-except requests.exceptions.RequestException as e:
-    print(f"Ошибка: {e}")
-```
+    except requests.exceptions.RequestException as e:
+        label.setText(f"Ошибка: {str(e)}")
 
----
-
-### 4. Важные замечания:
-1. **Соблюдайте правила сайта**:
-   - Проверьте файл `robots.txt` сайта (напр., `https://example.com/robots.txt`).
-   - Не отправляйте слишком частые запросы (может привести к блокировке IP).
-
-2. **Обработка ошибок**:
-   - Всегда используйте `try-except` для обработки сетевых ошибок.
-   - Учитывайте коды ответа (404, 500 и т.д.).
-
-3. **Динамические сайты**:
-   - Если сайт использует JavaScript для загрузки данных, потребуются инструменты вроде **Selenium** или **Scrapy**.
-
----
-
-Это базовая основа для работы с парсингом. Для сложных задач можно добавить:
-- Парсинг данных через регулярные выражения (`re`).
-- Использование `lxml` для ускорения парсинга.
-- Сохранение данных в CSV/JSON.
+form.pushButton.clicked.connect(parsing)
+window.show()
+app.exec()
