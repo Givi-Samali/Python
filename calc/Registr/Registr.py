@@ -76,8 +76,6 @@ def remove_user():
             cur.execute('DELETE FROM users WHERE id = ?', (id,))
             conn.commit()
             update_table()
-        else:
-            error_massage()
     except:
         error_massage()
 

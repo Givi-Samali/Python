@@ -53,7 +53,8 @@ def start():
 
 start()
 
-form.tree = QtWidgets().QTreeWidget(form).setGeometry(150,300,50,50)
+form.tree = QtWidgets.QTreeWidget(form).setGeometry(150, 300, 50, 50)
+
 form.tree.setStyleSheet('background-color: black;')
 window.show()
 app.exec()
