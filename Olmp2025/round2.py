@@ -236,9 +236,69 @@ def add_part(com):
     if not (coord[:2].isdigit() or coord[2] == ':' or coord[3:].isdigit() or (0 < int(coord[:2]) < 99) or (0 < int(coord[2:]) < 99)) or len(coord) != 5:
         add_part(com)
     name = input('[4] Наименование корабля ')
+    if not name.isalpha():
+        add_part(com)
     clas = input('[5] Класс корабля ')
+    if not clas.isdigit() or len(clas) != 1:
+        add_part(com)
     country = input('[6] Принадлежность ')
+    if not country.islower() or len(country) != 2:
+        add_part(com)
     codes = input('[7] Код системы «свой-чужой» ')
+    if len(codes) != 19:
+        add_part(com)
+    cur.execute('INSERT INTO Participants (number,coord,name,class,strana,code) VALUES (?,?,?,?,?,?)', (bort, coord, name, clas, country, codes))
+    conn.commit()
+    os.system('cls')
+    print('Запись в таблицу Participants успешно добавлена!\n')
+    repeats = input('Повторить? (y/n): ')
+    if repeats == 'y':
+        add_part(com)
+    else:
+        main()
+
+def add_allowed(com):
+    conn = sqlite3.connect('database.db')
+    cur = conn.cursor()
+    os.system('cls')
+    print(f"Add mode (Таблица: {com[1]}):\n")
+    codes = input('[1] Код системы «свой-чужой» ')
+    if len(codes) != 19:
+        add_allowed(com)
+    cur.execute('INSERT INTO Allowed (code) VALUES (?)', (codes,))
+    conn.commit()
+    os.system('cls')
+    print(f'Запись в таблицу {com[1]} успешно добавлена!\n')
+    repeats = input('Повторить? (y/n): ')
+    if repeats == 'y':
+        add_part(com)
+    else:
+        main()
+
+def add_situation(com):
+    conn = sqlite3.connect('database.db')
+    cur = conn.cursor()
+    os.system('cls')
+    print(f"Add mode (Таблица: {com[1]}):\n")
+    coord = input('[1] Координаты корабля ')
+    if not (coord[:2].isdigit() or coord[2] == ':' or coord[3:].isdigit() or (0 < int(coord[:2]) < 99) or (0 < int(coord[2:]) < 99)) or len(coord) != 5:
+        add_part(com)
+    codes = input('[2] Код системы «свой-чужой» ')
+    if len(codes) != 19:
+        add_allowed(com)
+    cur.execute('INSERT INTO Situation (coord, code) VALUES (?,?)', (coord, codes))
+    conn.commit()
+    os.system('cls')
+    print(f'Запись в таблицу {com[1]} успешно добавлена!\n')
+    repeats = input('Повторить? (y/n): ')
+    if repeats == 'y':
+        add_part(com)
+    else:
+        main()
+
+def add_classes(com):
+    os.system('cls')
+    print('Вносить изменения в эту таблицу невозможно!\n')
     qq(com)
 
 def add(com):
@@ -249,6 +309,12 @@ def add(com):
     else:
         if com[1] == 'Participants':
             add_part(com)
+        elif com[1] == 'Allowed':
+            add_allowed(com)
+        elif com[1] == 'Situation':
+            add_situation(com)
+        elif com[1] == 'Classes':
+            add_classes(com)
 
 def main():
     os.system('cls')
